@@ -3137,3 +3137,7 @@ input[type="submit"] {
 .customSelect .dropdown .dropdown-menu .show ul li a:hover {
     background-color: #545455 !important;
 }
+
+.required-file {
+    color: red;
+}
