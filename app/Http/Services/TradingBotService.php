@@ -4,10 +4,38 @@ namespace App\Http\Services;
 use App\Jobs\SinglePairBotOrder;
 use App\Model\CoinPair;
 use App\Model\CoinPairApiPrice;
+use App\Model\CoinPairOperation;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class TradingBotService
 {
+    /**
+     * Price adjustment based on CoinPairOperation time and information
+     *
+     * @param int $coinPairId
+     * @param float $currentPrice
+     * @return float
+     */
+    public function adjustPriceBasedOnTime($coinPairId, $currentPrice)
+    {
+        $coinPairOperations = CoinPairOperation::where('coin_pair_id', $coinPairId)->get();
+
+        $now = Carbon::now();
+        foreach ($coinPairOperations as $operation) {
+            if ($now->between($operation->running_time_start, $operation->running_time_close)) {
+                $maxPercent = $operation->upper_threshold;
+                $minPercent = $operation->lower_threshold;
+
+                $upperPrice = $currentPrice * (1 + $maxPercent / 100);
+                $lowerPrice = $currentPrice * (1 - $minPercent / 100);
+
+                return rand($lowerPrice * 1000000, $upperPrice * 1000000) / 1000000;
+            }
+        }
+
+        return $currentPrice;
+    }
 
     public function placeBotOrder($userId)
     {

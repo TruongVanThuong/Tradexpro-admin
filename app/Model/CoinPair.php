@@ -52,4 +52,10 @@ class CoinPair extends Model
     {
         return $this->belongsTo(Coin::class,'child_coin_id');
     }
+
+    public function operations()
+    {
+        return $this->hasMany(CoinPairOperation::class);
+    }
+
 }

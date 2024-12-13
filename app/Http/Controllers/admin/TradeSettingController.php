@@ -8,6 +8,7 @@ use App\Http\Services\AdminSettingService;
 use App\Model\AdminSetting;
 use App\Model\Coin;
 use App\Model\CoinPair;
+use App\Model\CoinPairOperation;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Services\CoinPairService;
@@ -46,7 +47,7 @@ class TradeSettingController extends Controller
                 return $query->where("child_coin.coin_type", "LIKE", "$search%")
                 ->orWhere("parent_coin.coin_type", "LIKE", "$search%");
             });
-            
+
             return datatables()->of($items)
             ->addColumn('parent_coin_name', function($item) {
                 return $item->parent_coin_name;
@@ -296,7 +297,7 @@ class TradeSettingController extends Controller
         if($response['success'])
         {
             $data['coin_pair_details']  = $response['data'];
-
+            $data['coin_pair_operations'] = CoinPairOperation::where('coin_pair_id',decrypt($id))->get();
             return view('admin.exchange.coin_pair.settings', $data);
         }
 

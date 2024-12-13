@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Http\Repositories\CoinPairRepository;
 use App\Model\CoinPair;
 use App\Model\SelectedCoinPair;
+use App\Model\CoinPairOperation;
 use Illuminate\Support\Facades\Log;
 
 class CoinPairService extends BaseService
@@ -141,6 +142,60 @@ class CoinPairService extends BaseService
             $coinPairDetails->lower_threshold = $request->lower_threshold;
             $coinPairDetails->save();
 
+            // Danh sách ID của các operation còn tồn tại sau khi submit
+            $existingOperationIds = [];
+
+            // Xử lý CoinPairOperation
+            if ($request->has('bot_operation_cpo')) {
+                foreach ($request->bot_operation_cpo as $index => $botOperation) {
+                    $runningTimeStart = $request->running_time_start[$index] ?? null;
+                    $runningTimeClose = $request->running_time_close[$index] ?? null;
+                    $upperThreshold = $request->upper_threshold_cpo[$index] ?? null;
+                    $lowerThreshold = $request->lower_threshold_cpo[$index] ?? null;
+
+                    // Kiểm tra xem có ID của record hiện tại không
+                    $operationId = $request->input("operation_id.{$index}");
+
+                    // Luôn tạo record mới nếu có đủ thông tin
+                    if ($botOperation && $runningTimeStart && $runningTimeClose && $upperThreshold && $lowerThreshold) {
+                        if ($operationId) {
+                            // Nếu có ID, tìm record để update
+                            $operation = CoinPairOperation::find($operationId);
+
+                            if ($operation) {
+                                // Nếu có sự thay đổi thì mới update
+                                $operation->update([
+                                    'bot_operation' => $botOperation,
+                                    'running_time_start' => $runningTimeStart,
+                                    'running_time_close' => $runningTimeClose,
+                                    'upper_threshold' => $upperThreshold,
+                                    'lower_threshold' => $lowerThreshold,
+                                ]);
+
+                                $existingOperationIds[] = $operationId;
+                            }
+                        } else {
+                            // Tạo record mới nếu không có ID
+                            $newOperation = CoinPairOperation::create([
+                                'coin_pair_id' => $id,
+                                'bot_operation' => $botOperation,
+                                'running_time_start' => $runningTimeStart,
+                                'running_time_close' => $runningTimeClose,
+                                'upper_threshold' => $upperThreshold,
+                                'lower_threshold' => $lowerThreshold,
+                                'created_at' => now()
+                            ]);
+
+                            $existingOperationIds[] = $newOperation->id;
+                        }
+                    }
+                }
+            }
+
+            // Xóa các record không còn tồn tại trong form
+            CoinPairOperation::where('coin_pair_id', $id)
+                ->whereNotIn('id', $existingOperationIds)
+                ->delete();
             $response = responseData(true, __('Coin pair setting is updated!'));
         }else{
             $response = responseData(false, __('Invalid Request!'));
