@@ -133,6 +133,11 @@ Route::group(['middleware' => 'maintenanceMode'], function (){
             Route::get('get-coin-list','CoinController@getCoinList');
             Route::get('get-coin-pair-list','CoinController@getCoinPairList');
 
+            // ieo
+            Route::get('get-ieo-list','IeoController@getIeoList')->name('getIeoList');
+            Route::get('get-ieo-user-registered','IeoController@getIeoUserRegistered')->name('getIeoUserRegistered');
+            Route::post('register-ieo','IeoController@registerIeo')->name('registerIeo');
+
             Route::group(['middleware' => ['checkSwap']], function () {
                 Route::get('swap-coin-details-app', 'WalletController@getCoinSwapDetailsApp')->name('getCoinSwapDetailsApp');
                 Route::get('get-rate-app', 'WalletController@getRateApp')->name('getRateApp');
