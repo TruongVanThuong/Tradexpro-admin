@@ -2,12 +2,15 @@
 namespace App\Http\Services;
 
 use App\Model\IeoModel;
+use App\Model\IeoWallet;
+use App\Model\Wallet;
 use App\Model\UserRegisteredIeo;
 use App\Http\Repositories\AdminIeoRepository;
 use Exception;
 use Carbon\Carbon;
 
-class IeoService extends BaseService {
+class IeoService extends BaseService
+{
 
     protected $object;
     protected $model;
@@ -72,7 +75,8 @@ class IeoService extends BaseService {
         }
     }
 
-    public function getIeo(){
+    public function getIeo()
+    {
         $object = $this->object->getDocs();
 
         if (empty($object)) {
@@ -88,23 +92,23 @@ class IeoService extends BaseService {
         return $object;
     }
 
-    public function getIeoUserRegistered() {
+    public function getIeoUserRegistered()
+    {
         $user = auth()->user();
-
-        if (!$user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
-
         $ieoHistory = IeoModel::whereHas('userRegisteredIeo', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->get(['id', 'name', 'value', 'symbol', 'total_supply', 'max_rate', 'start_date', 'end_date']);
+            ->get(['id', 'name', 'value', 'symbol', 'total_supply', 'max_rate', 'start_date', 'end_date']);
 
         $ieoHistory = $ieoHistory->map(function ($ieo) use ($user) {
             $userRegistered = $ieo->userRegisteredIeo->first();
             $frozenRate = $userRegistered ? $userRegistered->getLockedPercentage() : 0;
             $releaseRate = $userRegistered ? $userRegistered->getUnlockedPercentage() : 0;
-            $winningRate = $userRegistered ? $userRegistered->calculateWinRate() : 0;
+            $winningRate = $userRegistered ? $userRegistered->calculateWinRate($ieo->id, $user->id) : 0;
+            $checkIeoWallet = IeoWallet::where('user_id', $user->id)
+                ->where('coin_id', $ieo->id)
+                ->first();
+
             $quantityRegistered = $userRegistered ? $userRegistered->quantity : 0;
 
             return [
@@ -118,42 +122,73 @@ class IeoService extends BaseService {
                 'quantity' => $quantityRegistered,
                 'frozen_rate' => $frozenRate,
                 'release_rate' => $releaseRate,
-                'winning_rate' => $winningRate
+                'winning_rate' => $winningRate,
+                'checkIeoWallet' => $checkIeoWallet,
             ];
         });
 
-        return response()->json(['success'=>true,'data' => $ieoHistory]);
+        return response()->json(['success' => true, 'data' => $ieoHistory]);
     }
 
     public function registerIeo($ieoId, $amount)
     {
         $user = auth()->user();
-        if (!$user) {
-            return ['success' => false, 'message' => 'Bạn cần đăng nhập để tham gia!'];
-        }
-
         $ieo = IeoModel::find($ieoId);
-
-        if (!$ieo) {
-            return ['success' => false, 'message' => 'IEO không tồn tại!'];
-        }
-
-        if ($amount > ($ieo->total_supply - $ieo->registered)) {
-            return ['success' => false, 'message' => 'Số lượng đăng ký vượt quá số lượng còn lại!'];
-        }
 
         if ($amount <= 0) {
             return ['success' => false, 'message' => 'Vui lòng nhập số lượng lớn hơn 0!'];
         }
 
-        UserRegisteredIeo::create([
-            'user_id' => 2,
-            'ieo_id' => $ieo->id,
-            'quantity' => $amount,
-            'created_at' => Carbon::now()
+        $totalRegistered = UserRegisteredIeo::where('ieo_id', $ieoId)->sum('quantity');
+        if ($totalRegistered + $amount > $ieo->total_supply) {
+            return ['success' => false, 'message' => 'Đã hết số lượng IEO, không thể đăng ký thêm!'];
+        }
+
+        $wallet = Wallet::where('user_id', $user->id)->where('coin_id', 2)->first();
+        if (!$wallet || $wallet->balance < $amount * $ieo->value) {
+            return ['success' => false, 'message' => 'Số dư trong ví không đủ để đăng ký IEO!'];
+        }
+
+        $userRegisteredIeo = UserRegisteredIeo::firstOrNew(
+            ['user_id' => $user->id, 'ieo_id' => $ieoId]
+        );
+
+        $userRegisteredIeo->quantity += $amount;
+        $userRegisteredIeo->rating_win = $ieo->max_rate;
+        $userRegisteredIeo->save();
+
+        $wallet->balance -= $amount * $ieo->value;
+        $wallet->save();
+
+        return ['success' => true, 'message' => 'Đăng ký IEO thành công!'];
+    }
+
+    public function receiveIeo($ieoId)
+    {
+        $ieo = IeoModel::find($ieoId);
+        $user = auth()->user();
+
+        $userRegisteredIeo = UserRegisteredIeo::where('user_id', $user->id)
+            ->where('ieo_id', $ieoId)
+            ->first();
+
+        $receivedAmount = $userRegisteredIeo->quantity * $ieo->value;
+        $rating_win = $userRegisteredIeo->rating_win * $receivedAmount / 100;
+        $totalRate = $rating_win + $receivedAmount;
+
+        $ieoWallet = IeoWallet::create([
+            'user_id' => $user->id,
+            'coin_id' => $ieo->id,
+            'balance' => $totalRate,
+            'type' => '4',
+            'coin_type' => '4',
+            'name' => $ieo->name,
         ]);
 
-        return ['success' => true, 'message' => 'Đăng ký thành công!'];
+        if ($ieoWallet) {
+            return ['success' => true, 'message' => 'Nhận IEO thành công!'];
+        }
+        return ['success' => false, 'message' => 'Nhận IEO thất bại!'];
     }
 
 }

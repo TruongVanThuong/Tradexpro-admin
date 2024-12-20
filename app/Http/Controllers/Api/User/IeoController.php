@@ -35,4 +35,22 @@ class IeoController extends Controller
             return response()->json(['message' => $result['message'], 'success' => false]);
         }
     }
+
+    public function receiveIeo(Request $request)
+    {
+        $result = $this->service->receiveIeo($request['itemId']);
+
+        if ($result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+                'success' => true
+            ]);
+        } else {
+            return response()->json([
+                'message' => $result['message'],
+                'success' => false,
+            ]);
+        }
+    }
+
 }

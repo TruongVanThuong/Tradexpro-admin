@@ -4,6 +4,7 @@ namespace App\Model;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Model\IeoWallet;
 
 class UserRegisteredIeo extends Model
 {
@@ -32,12 +33,19 @@ class UserRegisteredIeo extends Model
         return $this->belongsTo(ieoModel::class, 'ieo_id', 'id');
     }
 
-    public function calculateWinRate()
+    public function calculateWinRate($ieoId, $userId)
     {
         $isIeoEnded = $this->isIeoEnded();
 
         if ($isIeoEnded) {
-            return $this->rating_win != 0 || $this->rating_win != null ? $this->rating_win . '%' : $this->ieo->max_rate. '%';
+            $ieoWallet = IeoWallet::where('user_id', $userId)
+                ->where('coin_id', $ieoId)
+                ->first();
+            if ($ieoWallet) {
+                return $this->rating_win . '%';
+            } else {
+                return $this->ieo->max_rate . '%';
+            }
         }
 
         return 'Đang tính toán';
