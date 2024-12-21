@@ -34,6 +34,10 @@
     ['route' => 'adminIeoList', 'title' => __('Ieo List'),'tab' => $sub_menu ?? '', 'tab_compare' => 'ieo_list', 'route_param' => NULL ],
 ]) !!}
 
+{!! subMenuRenderer(__('User Register Ieo'),$menu ?? '', 'User Register Ieo','fiat.svg',[
+    ['route' => 'adminUserRegisteredIeoList', 'title' => __('User Register Ieo'),'tab' => $sub_menu ?? '', 'tab_compare' => 'user_register_ieo_list', 'route_param' => NULL ],
+]) !!}
+
 {!! subMenuRenderer(__('Admin and Role'),$menu ?? '', 'role','user1.svg',[
     ['route' => 'adminList', 'title' => __('Admin'),'tab' => $sub_menu ?? '', 'tab_compare' => 'admin_list', 'route_param' => NULL ],
     ['route' => 'adminRoleList', 'title' => __('Role'),'tab' => $sub_menu ?? '', 'tab_compare' => 'admin_role_list', 'route_param' => NULL ],

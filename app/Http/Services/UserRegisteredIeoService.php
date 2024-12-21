@@ -2,38 +2,30 @@
 namespace App\Http\Services;
 
 use App\Model\IeoModel;
-use App\Model\IeoWallet;
-use App\Model\Wallet;
-use App\Model\Transaction;
 use App\Model\UserRegisteredIeo;
-use App\Http\Repositories\AdminIeoRepository;
 use Exception;
-use Illuminate\Support\Facades\DB;
 
-class IeoService extends BaseService
+class UserRegisteredIeoService extends BaseService
 {
-
-    protected $object;
     protected $model;
-    protected $repository;
 
     public function __construct()
     {
-        $this->model = new IeoModel();
-        $this->repository = new AdminIeoRepository($this->model);
-        $this->object = $this->repository;
-        parent::__construct($this->model, $this->repository);
+        $this->model = new UserRegisteredIeo();
     }
 
-    public function getIeoDetailsById($ieoId)
+    public function getUserRegisteredIeoDetailsById($registeredIeoId)
     {
         try {
-            $ieo = $this->object->getIeoDetailsById($ieoId);
-
-            if ($ieo) {
+            $UserRegisteredIeo = UserRegisteredIeo::leftJoin('users', 'user_registered_ieo.user_id', '=', 'users.id')
+            ->leftJoin('ieo', 'user_registered_ieo.ieo_id', '=', 'ieo.id')
+            ->select('user_registered_ieo.id','user_registered_ieo.rating_win', 'users.last_name as user_name', 'ieo.name as ieo_name')
+            ->where('user_registered_ieo.id', $registeredIeoId)
+            ->first();
+            if ($UserRegisteredIeo) {
                 return [
                     'success' => true,
-                    'data' => $ieo,
+                    'data' => $UserRegisteredIeo,
                     'message' => __('Successfully retrieved IEO data.')
                 ];
             } else {
@@ -177,46 +169,19 @@ class IeoService extends BaseService
         $rating_win = $userRegisteredIeo->rating_win * $receivedAmount / 100;
         $totalRate = $rating_win + $receivedAmount;
 
-        try {
-            DB::beginTransaction();
+        $ieoWallet = IeoWallet::create([
+            'user_id' => $user->id,
+            'coin_id' => $ieo->id,
+            'balance' => $totalRate,
+            'type' => '4',
+            'coin_type' => '4',
+            'name' => $ieo->name,
+        ]);
 
-            $ieoWallet = IeoWallet::create([
-                'user_id' => $user->id,
-                'coin_id' => $ieo->id,
-                'balance' => $totalRate,
-                'type' => '4',
-                'coin_type' => '4',
-                'name' => $ieo->name,
-            ]);
-
-            // Kiểm tra nếu tạo wallet không thành công
-            if (!$ieoWallet) {
-                throw new Exception('Không thể tạo ví IEO.');
-            }
-
-            // Tạo Transaction Log
-            $transaction = Transaction::create([
-                'user_id' => $user->id,
-                'trade_coin_id' => $ieoId,
-                'base_coin_id' => 2,
-                'amount' => $ieo->value,
-                'price' => $receivedAmount,
-                'last_price' => $totalRate,
-            ]);
-
-            // Kiểm tra nếu tạo transaction không thành công
-            if (!$transaction) {
-                throw new Exception('Không thể tạo giao dịch IEO.');
-            }
-
-            DB::commit();
-
+        if ($ieoWallet) {
             return ['success' => true, 'message' => 'Nhận IEO thành công!'];
-        } catch (Exception $e) {
-            DB::rollBack();
-            return ['success' => false, 'message' => $e->getMessage()];
         }
+        return ['success' => false, 'message' => 'Nhận IEO thất bại!'];
     }
-
 
 }

@@ -5,6 +5,7 @@ namespace App\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Model\IeoWallet;
+use App\User;
 
 class UserRegisteredIeo extends Model
 {
@@ -31,6 +32,11 @@ class UserRegisteredIeo extends Model
     public function ieo()
     {
         return $this->belongsTo(ieoModel::class, 'ieo_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function calculateWinRate($ieoId, $userId)
