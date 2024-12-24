@@ -4,6 +4,8 @@ namespace App\Http\Services;
 use App\Model\IeoModel;
 use App\Model\IeoWallet;
 use App\Model\Wallet;
+use App\Model\Coin;
+use App\Model\LogTranferIeoCoin;
 use App\Model\Transaction;
 use App\Model\UserRegisteredIeo;
 use App\Http\Repositories\AdminIeoRepository;
@@ -99,6 +101,11 @@ class IeoService extends BaseService
         $ieoHistory = IeoModel::whereHas('userRegisteredIeo', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
+            ->with([
+                'userRegisteredIeo' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                }
+            ])
             ->get(['id', 'name', 'value', 'symbol', 'total_supply', 'max_rate', 'start_date', 'end_date']);
 
         $ieoHistory = $ieoHistory->map(function ($ieo) use ($user) {
@@ -106,8 +113,8 @@ class IeoService extends BaseService
             $frozenRate = $userRegistered ? $userRegistered->getLockedPercentage() : 0;
             $releaseRate = $userRegistered ? $userRegistered->getUnlockedPercentage() : 0;
             $winningRate = $userRegistered ? $userRegistered->calculateWinRate($ieo->id, $user->id) : 0;
-            $checkIeoWallet = IeoWallet::where('user_id', $user->id)
-                ->where('coin_id', $ieo->id)
+            $checkIeoWallet = LogTranferIeoCoin::where('user_id', $user->id)
+                ->where('ieo_id', $ieo->id)
                 ->first();
 
             $quantityRegistered = $userRegistered ? $userRegistered->quantity : 0;
@@ -166,57 +173,106 @@ class IeoService extends BaseService
 
     public function receiveIeo($ieoId)
     {
-        $ieo = IeoModel::find($ieoId);
         $user = auth()->user();
+        $ieo = IeoModel::findOrFail($ieoId);
+        $coin = Coin::firstWhere('coin_type', $ieo->symbol);
 
-        $userRegisteredIeo = UserRegisteredIeo::where('user_id', $user->id)
-            ->where('ieo_id', $ieoId)
-            ->first();
-
-        $receivedAmount = $userRegisteredIeo->quantity * $ieo->value;
-        $rating_win = $userRegisteredIeo->rating_win * $receivedAmount / 100;
-        $totalRate = $rating_win + $receivedAmount;
+        if (!$coin) {
+            return $this->errorResponse('Hệ thống đang chuyển đổi vui lòng liên hệ với CSKH!');
+        }
 
         try {
-            DB::beginTransaction();
+            return DB::transaction(function () use ($user, $ieo, $coin) {
+                $userRegisteredIeo = UserRegisteredIeo::where([
+                    'user_id' => $user->id,
+                    'ieo_id' => $ieo->id
+                ])->firstOrFail();
 
-            $ieoWallet = IeoWallet::create([
-                'user_id' => $user->id,
-                'coin_id' => $ieo->id,
-                'balance' => $totalRate,
-                'type' => '4',
-                'coin_type' => '4',
-                'name' => $ieo->name,
-            ]);
+                $amounts = $this->calculateIeoAmounts($userRegisteredIeo, $ieo);
 
-            // Kiểm tra nếu tạo wallet không thành công
-            if (!$ieoWallet) {
-                throw new Exception('Không thể tạo ví IEO.');
-            }
+                if ($amounts['win'] > 0) {
+                    $winWallet = Wallet::where([
+                        'user_id' => $user->id,
+                        'coin_id' => $coin->id
+                    ])->firstOrFail();
 
-            // Tạo Transaction Log
-            $transaction = Transaction::create([
-                'user_id' => $user->id,
-                'trade_coin_id' => $ieoId,
-                'base_coin_id' => 2,
-                'amount' => $ieo->value,
-                'price' => $receivedAmount,
-                'last_price' => $totalRate,
-            ]);
+                    $this->createTransactionLog(
+                        $user->id,
+                        $ieo->id,
+                        $winWallet->id,
+                        $amounts['win'],
+                        'Số tiền chiến thắng coin IEO!'
+                    );
 
-            // Kiểm tra nếu tạo transaction không thành công
-            if (!$transaction) {
-                throw new Exception('Không thể tạo giao dịch IEO.');
-            }
+                    $winWallet->balance += $amounts['win'];
+                    $winWallet->save();
+                }
 
-            DB::commit();
+                if ($amounts['refund'] > 0) {
+                    $refundWallet = Wallet::where([
+                        'user_id' => $user->id,
+                        'coin_id' => 2
+                    ])->firstOrFail();
 
-            return ['success' => true, 'message' => 'Nhận IEO thành công!'];
+                    $this->createTransactionLog(
+                        $user->id,
+                        $ieo->id,
+                        $refundWallet->id,
+                        $amounts['refund'],
+                        'Số tiền hoàn trả coin IEO!'
+                    );
+
+                    $refundWallet->balance += $amounts['refund'];
+                    $refundWallet->save();
+                }
+
+                return $this->successResponse('Nhận IEO thành công!');
+            });
         } catch (Exception $e) {
-            DB::rollBack();
-            return ['success' => false, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
+    private function calculateIeoAmounts($userRegisteredIeo, $ieo)
+    {
+        if ($userRegisteredIeo->rating_win > 0) {
+            $winAmount = ($userRegisteredIeo->rating_win * $userRegisteredIeo->quantity / 100);
+            $refundAmount = $userRegisteredIeo->quantity - $winAmount;
+
+            return [
+                'win' => $winAmount * $ieo->value,
+                'refund' => $refundAmount * $ieo->value,
+                'total' => ($winAmount + $refundAmount) * $ieo->value
+            ];
+        }
+
+        return [
+            'win' => 0,
+            'refund' => $userRegisteredIeo->quantity * $ieo->value,
+            'total' => $userRegisteredIeo->quantity * $ieo->value
+        ];
+    }
+
+    private function createTransactionLog($userId, $ieoId, $walletId, $amount, $note)
+    {
+        return LogTranferIeoCoin::create([
+            'user_id' => $userId,
+            'ieo_id' => $ieoId,
+            'wallet_coin_id' => $walletId,
+            'balance' => $amount,
+            'note' => $note,
+            'create_at' => now(),
+        ]);
+    }
+
+    private function successResponse($message)
+    {
+        return ['success' => true, 'message' => $message];
+    }
+
+    private function errorResponse($message)
+    {
+        return ['success' => false, 'message' => $message];
+    }
 
 }

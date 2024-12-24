@@ -23,6 +23,8 @@ class IeoSaveRequest extends FormRequest
      */
     public function rules()
     {
+        $file_size = (ADMIN_SETTINGS_ARRAY['upload_max_size'] ?? 2) * 1024;
+
         return [
             'name' => 'required|max:100',
             'value' => 'required|numeric|gt:0',
@@ -31,6 +33,12 @@ class IeoSaveRequest extends FormRequest
             'max_rate' => 'nullable|numeric|gte:0',
             'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'ieo_icon' => [
+                'nullable',
+                'image',
+                'mimes:jpg,png,jpeg,JPG,PNG,webp,gif',
+                'max:' . $file_size,
+            ],
         ];
     }
 
@@ -61,6 +69,9 @@ class IeoSaveRequest extends FormRequest
             'end_date.required' => __('The end date field is required.'),
             'end_date.date' => __('The end date must be a valid date.'),
             'end_date.after_or_equal' => __('The end date must be after or equal to the start date.'),
+            'ieo_icon.image' => __('The file must be an image.'),
+            'ieo_icon.mimes' => __('The image must be a file of type: jpg, jpeg, png, webp, gif.'),
+            'ieo_icon.max' => __('The image size must not exceed :max KB.', ['max' => ADMIN_SETTINGS_ARRAY['upload_max_size'] ?? 2]),
         ];
     }
 }
