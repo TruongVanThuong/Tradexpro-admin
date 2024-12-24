@@ -101,6 +101,80 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="add-rows-container">
+                                @if(isset($coin_pair_operations) && count($coin_pair_operations) > 0)
+                                    @foreach($coin_pair_operations as $setting)
+                                        <input type="hidden" name="operation_id[]" value="{{ $setting->id }}">
+                                        <div class="row mb-2 pb-2">
+                                            <div class="col-md-12 border-top"></div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <div class="controls">
+                                                        <div class="form-label">{{__('Bot Operation')}}</div>
+                                                        <select class="form-control" name="bot_operation_cpo[]">
+                                                            @foreach (bot_operation() as $key => $val)
+                                                                <option value="{{ $key }}" @if($setting->bot_operation == $key) selected @endif>
+                                                                    {{ $val }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <div class="controls">
+                                                        <div class="form-label">{{__('Running Time Start')}}</div>
+                                                        <input type="text" class="form-control" name="running_time_start[]"
+                                                            value="{{ $setting->running_time_start }}" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <div class="controls">
+                                                        <div class="form-label">{{__('Running Time Close')}}</div>
+                                                        <input type="text" class="form-control" name="running_time_close[]"
+                                                            value="{{ $setting->running_time_close }}" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <div class="controls">
+                                                        <div class="form-label">{{__('Upper Threshold')}}</div>
+                                                        <input type="number" class="form-control" name="upper_threshold_cpo[]"
+                                                            value="{{ $setting->upper_threshold }}" step="0.01" min="0" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <div class="controls">
+                                                        <div class="form-label">{{__('Lower Threshold')}}</div>
+                                                        <input type="number" class="form-control" name="lower_threshold_cpo[]"
+                                                            value="{{ $setting->lower_threshold }}" step="0.01" min="0" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4" style="margin-top: 31px;">
+                                                <button type="button" class="btn btn-outline-danger delete-row-btn" style="height: 38px;"><i class="fa fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <button type="button" id="add-row-btn" class="btn btn-outline-primary"><i class="fa fa-plus"></i></button>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-12 mb-3 mt-3">
                                     <h4 class="text-white">{{__('Future Trade Setting')}}</h4>
@@ -165,4 +239,77 @@
 @endsection
 
 @section('script')
+
+<script>
+    $(document).ready(function () {
+        $('#add-row-btn').on('click', function () {
+            let newRow = `
+                <div class="row mb-2 pb-2">
+                    // <input type="hidden" name="operation_id[]" value="">
+                    <div class="col-md-12 border-top"></div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <div class="controls">
+                                <div class="form-label">{{__('Bot Operation')}}</div>
+                                <select class="form-control" name="bot_operation_cpo[]" id="">
+                                    @foreach (bot_operation() as $key => $val)
+                                        <option value="{{ $key }}">{{ $val }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <div class="controls">
+                                <div class="form-label">{{__('Running Time Start')}}</div>
+                                <input type="date" class="form-control" name="running_time_start[]" requied>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <div class="controls">
+                                <div class="form-label">{{__('Running Time Close')}}</div>
+                                <input type="date" class="form-control" name="running_time_close[]" required >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <div class="controls">
+                                <div class="form-label">{{__('Upper Threshold')}}</div>
+                                <input type="number" class="form-control" name="upper_threshold_cpo[]" value="" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <div class="controls">
+                                <div class="form-label">{{__('Lower Threshold')}}</div>
+                                <input type="number" class="form-control" name="lower_threshold_cpo[]" value="" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4" style="margin-top: 31px;">
+                        <button type="button" class="btn btn-outline-danger delete-row-btn" style="height: 38px;"><i class="fa fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+
+            $('#add-rows-container').append(newRow);
+        });
+
+        $(document).on('click', '.delete-row-btn', function () {
+            $(this).closest('.row').remove();
+        });
+
+    });
+</script>
+
+
 @endsection

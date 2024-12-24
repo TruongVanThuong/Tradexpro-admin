@@ -50,6 +50,12 @@ Route::group(['prefix' => 'admin', 'namespace' => 'admin', 'middleware' => ['aut
     // future trade management
     require base_path('routes/link/futureTradeManagement.php');
 
+    // ieo management
+    require base_path('routes/link/ieoManagement.php');
+
+    // userRegisterIeo management
+    require base_path('routes/link/userRegisterIeo.php');
+
    // notification
     Route::group(['group' => 'notify'], function () {
         Route::get('send-notification', 'DashboardController@sendNotification')->name('sendNotification');
