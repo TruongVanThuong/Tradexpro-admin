@@ -9,22 +9,20 @@
             <div class="col-12">
                 <ul>
                     <li>{{ __('IEO') }}</li>
-                    {{-- <li class="active-item">{{ $title }}</li> --}}
+                    <li class="active-item">{{ $title }}</li>
                 </ul>
             </div>
         </div>
     </div>
     <!-- /breadcrumb -->
-    @php
-        $demoTrade = (isset($module) && isset($module['DemoTrade'])) ? true : false ;
-    @endphp
+
     <!-- User Management -->
     <div class="user-management pt-4">
         <div class="row">
             <div class="col-12">
                 <div class="header-bar">
                     <div class="table-title">
-                        {{-- <!-- <h3>{{ $title }}</h3> --> --}}
+                        <h3>{{ $title }}</h3>
                     </div>
                     <div class="right d-flex align-items-center">
                         <div class="add-btn-new mb-2 ml-2">
@@ -37,9 +35,10 @@
                         <table id="table" class="table table-borderless custom-table display text-lg-center" width="100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">{{ __('Coin Name') }}</th>
-                                    <th scope="col">{{ __('Coin Value (USDT)') }}</th>
-                                    <th scope="col" class="all">{{ __('Coin Symbol') }}</th>
+                                    <th scope="col">{{ __('Ieo Icon') }}</th>
+                                    <th scope="col">{{ __('Ieo Name') }}</th>
+                                    <th scope="col">{{ __('Ieo Value (USDT)') }}</th>
+                                    <th scope="col" class="all">{{ __('Ieo Symbol') }}</th>
                                     <th scope="col">{{ __('Total Supply') }}</th>
                                     <th scope="col">{{ __('Max Win Rate (%)') }}</th>
                                     <th scope="col" class="all">{{ __('Start Date') }}</th>
@@ -70,6 +69,7 @@
                 serverSide: true,
                 ajax: '{{ route('adminIeoList') }}', // Đảm bảo route đúng
                 columns: [
+                    { "data": "ieo_icon", "orderable": false, "searchable": false },
                     { "data": "name", "orderable": true },
                     { "data": "value", "orderable": true },
                     { "data": "symbol", "orderable": true },
