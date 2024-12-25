@@ -11,6 +11,7 @@ use App\Model\UserRegisteredIeo;
 use App\Http\Repositories\AdminIeoRepository;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class IeoService extends BaseService
 {
@@ -275,4 +276,75 @@ class IeoService extends BaseService
         return ['success' => false, 'message' => $message];
     }
 
+    public function getIeoTransactionHistory(Request $request)
+    {
+        try {
+            $limit = $request->input('limit', 1);
+            $page = $request->input('page', 1);
+            $sort = $request->input('sort', 'create_at');
+            $sort_order = $request->input('sort_order', 'desc');
+            $search = $request->input('search', '');
+
+            $user = auth()->user();
+
+            $query = LogTranferIeoCoin::query()
+                ->select([
+                    'log_tranfer_ieo_coin.user_id',
+                    'log_tranfer_ieo_coin.balance',
+                    'log_tranfer_ieo_coin.note',
+                    'log_tranfer_ieo_coin.create_at',
+                    'ieo.name as ieo_name',
+                    'ieo.ieo_icon',
+                    'coins.name as coin_name',
+                ])
+                ->leftJoin('ieo', 'log_tranfer_ieo_coin.ieo_id', '=', 'ieo.id')
+                ->leftJoin('coins', 'log_tranfer_ieo_coin.wallet_coin_id', '=', 'coins.id')
+                ->where('log_tranfer_ieo_coin.user_id', $user->id);
+
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('ieo.name', 'like', "%{$search}%")
+                    ->orWhere('coins.name', 'like', "%{$search}%")
+                    ->orWhere('log_tranfer_ieo_coin.note', 'like', "%{$search}%");
+                });
+            }
+
+            if ($sort) {
+                $sortColumnMap = [
+                    'ieo_name' => 'ieo.name',
+                    'coin_name' => 'coins.name',
+                    'balance' => 'log_tranfer_ieo_coin.balance',
+                    'note' => 'log_tranfer_ieo_coin.note',
+                    'create_at' => 'log_tranfer_ieo_coin.create_at'
+                ];
+
+                $sortColumn = $sortColumnMap[$sort] ?? 'log_tranfer_ieo_coin.create_at';
+                $query->orderBy($sortColumn, $sort_order);
+            }
+
+            $transactions = $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'data' => $transactions->items(),
+                    'pagination' => [
+                        'current_page' => $transactions->currentPage(),
+                        'per_page' => (int)$transactions->perPage(),
+                        'total' => $transactions->total(),
+                        'last_page' => $transactions->lastPage(),
+                        'from' => $transactions->firstItem(),
+                        'to' => $transactions->lastItem()
+                    ]
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            \Log::error('IEO Transaction History Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching transaction history'
+            ], 500);
+        }
+    }
 }

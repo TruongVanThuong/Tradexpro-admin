@@ -53,4 +53,8 @@ class IeoController extends Controller
         }
     }
 
+    public function getIeoTransactionHistory(Request $request) {
+        return $this->service->getIeoTransactionHistory($request);
+    }
+
 }
