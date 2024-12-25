@@ -24,6 +24,7 @@ class ieoModel extends Model
         'name',
         'value',
         'symbol',
+        'ieo_icon',
         'total_supply',
         'max_rate',
         'start_date',

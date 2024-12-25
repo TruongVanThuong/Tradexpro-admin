@@ -83,8 +83,8 @@
                             <div class="col-12 col-sm-6 col-md-4">
                                 <div class="form-group">
                                     <div class="controls">
-                                        <div class="form-label">{{ __('IEO Start End') }} <span class="required-file">*</span></div>
-                                        <input type="date" class="form-control" id="start_date" name="start_date"
+                                        <div class="form-label">{{ __('IEO Start Date') }} <span class="required-file">*</span></div>
+                                        <input type="datetime-local" class="form-control" id="start_date" name="start_date"
                                             value="{{ old('start_date') }}">
                                         <pre class="text-danger">{{ $errors->first('start_date') }}</pre>
                                     </div>
@@ -95,16 +95,31 @@
                                 <div class="form-group">
                                     <div class="controls">
                                         <div class="form-label">{{ __('IEO End Date') }} <span class="required-file">*</span></div>
-                                        <input type="date" class="form-control" id="end_date" name="end_date"
+                                        <input type="datetime-local" class="form-control" id="end_date" name="end_date"
                                             value="{{ old('end_date') }}">
                                         <pre class="text-danger">{{ $errors->first('end_date') }}</pre>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="col-12 col-sm-6 col-md-4">
+                                <div class="form-group">
+                                    <label for="#">{{ __('Ieo Image') }}</label>
+                                    <div id="file-upload" class="section-width">
+                                        <input type="file" placeholder="0.00" name="ieo_icon" value=""
+                                            id="file" ref="file" class="dropify"
+                                            @if (isset($item) && !empty($item->ieo_icon)) data-default-file="{{ asset(path_image() . $item->ieo_icon) }}" @endif />
+                                        <pre class="text-danger">{{ $errors->first('ieo_icon') }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
 
-                        <div class="col-md-2">
-                            <button type="submit" class="btn theme-btn">{{ $button_title }}</button>
+                        <div class="row">
+                            <div class="col-md-2">
+                                <button type="submit" class="btn theme-btn">{{ $button_title }}</button>
+                            </div>
                         </div>
 
                         {{ Form::close() }}

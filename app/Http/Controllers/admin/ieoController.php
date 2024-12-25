@@ -17,15 +17,16 @@ class ieoController extends Controller
     {
         $this->ieoService = new IeoService();
     }
-    public function getIeo(Request $request)
+    public function adminIeoList(Request $request)
     {
+        $data['title'] = __('Ieo List');
         if ($request->ajax()) {
-            // Truy vấn dữ liệu IEO
             $ieos = ieoModel::select([
                 'id',
                 'name',
                 'value',
                 'symbol',
+                'ieo_icon',
                 'total_supply',
                 'max_rate',
                 'start_date',
@@ -42,11 +43,14 @@ class ieoController extends Controller
                 ->editColumn('end_date', function ($ieo) {
                     return $ieo->end_date ? $ieo->end_date->format('Y-m-d H:i:s') : 'N/A';
                 })
-                ->rawColumns(['actions'])
+                ->editColumn('ieo_icon', function ($ieo) {
+                    return $ieo->ieo_icon ? '<img src="' . asset(path_image(). 'coin/' . $ieo->ieo_icon) . '" alt="' . $ieo->name . '" width="50" height="50" />' : 'N/A';
+                })
+                ->rawColumns(['actions', 'ieo_icon'])
                 ->make(true);
         }
 
-        return view('admin.ieo.ieo');
+        return view('admin.ieo.ieo', $data);
     }
 
     // add ieo page
@@ -73,7 +77,12 @@ class ieoController extends Controller
                 'start_date'    => $request->start_date,
                 'end_date'      => $request->end_date,
             ];
-
+            if (!empty($request->ieo_icon)) {
+                $ieo_icon = uploadFile($request->ieo_icon,IMG_ICON_PATH,'');
+                if ($ieo_icon != false) {
+                    $data['ieo_icon'] = $ieo_icon;
+                }
+            }
             $save = ieoModel::create($data);
             if ($save) {
                 return redirect()->route('adminIeoList')->with('dismiss', __('New ieo added successfully'));
@@ -124,6 +133,13 @@ class ieoController extends Controller
             $ieo->max_rate = $request->max_rate;
             $ieo->start_date = $request->start_date;
             $ieo->end_date = $request->end_date;
+
+            if (!empty($request->ieo_icon)) {
+                $ieo_icon = uploadFile($request->ieo_icon,IMG_ICON_PATH,'');
+                if ($ieo_icon != false) {
+                    $ieo->ieo_icon = $ieo_icon;
+                }
+            }
 
             $update = $ieo->save();
 

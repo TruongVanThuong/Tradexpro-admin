@@ -17,6 +17,7 @@ class CreateIeoTable extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('value', 10, 2);
+            $table->string('ieo_icon', 50)->nullable();
             $table->string('symbol');
             $table->bigInteger('total_supply');
             $table->decimal('max_rate', 5, 2);
