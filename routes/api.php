@@ -72,6 +72,7 @@ Route::group(['middleware' => 'maintenanceMode'], function (){
 
             Route::get('currency-list', 'LandingController@currencyList');
             Route::get('public-site-settings', 'LandingController@publicSiteSettings');
+            Route::post('check-referrals-code', 'AuthController@checkReferralsCode');
         });
         Route::group(['namespace'=>'Api\User'], function () {
             Route::get('get-exchange-all-orders-app', 'ExchangeController@getExchangeAllOrdersApp')->name('getExchangeAllOrdersApp');
