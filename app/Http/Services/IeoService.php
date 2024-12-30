@@ -114,7 +114,10 @@ class IeoService extends BaseService
             $frozenRate = $userRegistered ? $userRegistered->getLockedPercentage() : 0;
             $releaseRate = $userRegistered ? $userRegistered->getUnlockedPercentage() : 0;
             $winningRate = $userRegistered ? $userRegistered->calculateWinRate($ieo->id, $user->id) : 0;
-            $checkIeoWallet = LogTranferIeoCoin::where('user_id', $user->id)
+            $checkIeoWallet = IeoWallet::where('user_id', $user->id)
+                ->where('coin_id', $ieo->id)
+                ->first();
+            $checkIeoTranferHistory = LogTranferIeoCoin::where('user_id', $user->id)
                 ->where('ieo_id', $ieo->id)
                 ->first();
 
@@ -133,6 +136,7 @@ class IeoService extends BaseService
                 'release_rate' => $releaseRate,
                 'winning_rate' => $winningRate,
                 'checkIeoWallet' => $checkIeoWallet,
+                'checkIeoTranferHistory' => $checkIeoTranferHistory,
             ];
         });
 
@@ -170,6 +174,42 @@ class IeoService extends BaseService
         $wallet->save();
 
         return ['success' => true, 'message' => 'Đăng ký IEO thành công!'];
+    }
+
+    public function receiveIeoWallet($ieoId)
+    {
+        $user = auth()->user();
+        $ieo = IeoModel::findOrFail($ieoId);
+        $coin = Coin::firstWhere('coin_type', $ieo->symbol);
+
+        if (!$coin) {
+            return $this->errorResponse('Hệ thống đang chuyển đổi vui lòng liên hệ với CSKH!');
+        }
+
+        try {
+            return DB::transaction(function () use ($user, $ieo, $coin) {
+                $userRegisteredIeo = UserRegisteredIeo::where([
+                    'user_id' => $user->id,
+                    'ieo_id' => $ieo->id
+                ])->firstOrFail();
+
+                $amounts = $this->calculateIeoAmounts($userRegisteredIeo, $ieo);
+
+                // Save to IeoWallet
+                IeoWallet::create([
+                    'user_id' => $user->id,
+                    'name' => $ieo->name,
+                    'coin_id' => $ieo->id,
+                    'type' => 4,
+                    'coin_type' => 4,
+                    'balance' => $amounts['total']
+                ]);
+
+                return $this->successResponse('Nhận IEO thành công!');
+            });
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
     }
 
     public function receiveIeo($ieoId)
@@ -227,7 +267,7 @@ class IeoService extends BaseService
                     $refundWallet->save();
                 }
 
-                return $this->successResponse('Nhận IEO thành công!');
+                return $this->successResponse('Đã lưu vào ví IEO thành công!');
             });
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());

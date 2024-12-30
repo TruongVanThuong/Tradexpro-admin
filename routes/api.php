@@ -138,6 +138,7 @@ Route::group(['middleware' => 'maintenanceMode'], function (){
             Route::get('get-ieo-user-registered','IeoController@getIeoUserRegistered')->name('getIeoUserRegistered');
             Route::post('register-ieo','IeoController@registerIeo')->name('registerIeo');
             Route::post('receive-ieo', 'IeoController@receiveIeo')->name('receiveIeo');
+            Route::post('receive-ieo-wallet', 'IeoController@receiveIeoWallet')->name('receiveIeoWallet');
             Route::get('get-ieo-transaction-history','IeoController@getIeoTransactionHistory');
 
             Route::group(['middleware' => ['checkSwap']], function () {
