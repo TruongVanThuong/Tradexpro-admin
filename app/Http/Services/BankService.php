@@ -29,15 +29,20 @@ class BankService extends BaseService
                 'bank_name' => $request->bank_name,
                 'bank_address' => $request->bank_address,
                 'country' => $request->country_code,
-                'swift_code' => $request->swift_code,
                 'iban' => $request->iban,
                 'note' => $request->note,
                 'status' => isset($request->status) ? true : false,
             ];
 
-            if(isset($request->id)){
-                
-                $data['id'] =  $request->id;
+            if (!empty($request->swift_code)) {
+                $swift_code = uploadFile($request->swift_code,'uploaded_file/uploads/qr_code/','');
+                if ($swift_code !== false) {
+                    $data['swift_code'] = $swift_code;
+                }
+            }
+
+            if (isset($request->id)) {
+                $data['id'] = $request->id;
                 $this->object->saveBank($data);
                 $response = ['success' => true, 'message' => __('Bank updated successfully!')];
 

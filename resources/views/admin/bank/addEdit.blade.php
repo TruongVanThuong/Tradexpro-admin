@@ -22,7 +22,7 @@
             <div class="col-12">
                 <div class="profile-info-form">
                     <div class="card-body">
-                        <form action="{{route('bankStore')}}" method="post">
+                        <form action="{{route('bankStore')}}" method="post" enctype="multipart/form-data">
                             @csrf
 
                             @if(isset($item))
@@ -80,8 +80,12 @@
                                 <div class="col-md-6 mt-20">
                                     <div class="form-group">
                                         <label for="swift_code">{{__('Swift Code')}}</label>
-                                        <input type="text" name="swift_code" class="form-control" id="swift_code" placeholder="{{__('Swift Code')}}"
-                                               @if(isset($item)) value="{{$item->swift_code}}" @else value="{{old('swift_code')}}" @endif>
+                                        <div id="file-upload" class="section-width">
+                                            <input type="file" placeholder="0.00" name="swift_code" value="" id="file" ref="file" class="dropify"
+                                                @if (isset($item) && !empty($item->swift_code))
+                                                    data-default-file="{{ asset(path_image() . ($item->id ? 'qr_code/' : '') . $item->swift_code) }}"
+                                                @endif />
+                                        </div>
                                         <span class="text-danger"><strong>{{ $errors->first('swift_code') }}</strong></span>
                                     </div>
                                 </div>

@@ -49,7 +49,19 @@
                                             <td> {{ $value->account_holder_name}} </td>
                                             <td> {{$value->bank_name}} </td>
                                             <td> {{isset($value->getCountry)?$value->getCountry->value:'N/A'}} </td>
-                                            <td> {{$value->swift_code}} </td>
+                                            <td>
+                                                @if(!empty($value->swift_code))
+                                                    <img src="{{ asset('uploaded_file/uploads/qr_code/' . $value->swift_code) }}"
+                                                         alt="Swift Code"
+                                                         class="img-fluid"
+                                                         style="max-height: 50px;"
+                                                         data-bs-toggle="modal"
+                                                         data-bs-target="#imageModal{{ $value->id }}"
+                                                    >
+                                                @else
+                                                    {{ __('No Image') }}
+                                                @endif
+                                            </td>
                                             <td>
                                                 <div>
                                                     <label class="switch">
