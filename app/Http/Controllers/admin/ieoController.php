@@ -44,7 +44,10 @@ class ieoController extends Controller
                     return $ieo->end_date ? $ieo->end_date->format('Y-m-d H:i:s') : 'N/A';
                 })
                 ->editColumn('ieo_icon', function ($ieo) {
-                    return $ieo->ieo_icon ? '<img src="' . asset(path_image(). 'coin/' . $ieo->ieo_icon) . '" alt="' . $ieo->name . '" width="50" height="50" />' : 'N/A';
+                    if ($ieo->ieo_icon) {
+                        return '<img src="' . asset(path_image() . 'coin/' . $ieo->ieo_icon) . '" alt="' . $ieo->name . '" width="50" height="50" />';
+                    }
+                    return '';
                 })
                 ->rawColumns(['actions', 'ieo_icon'])
                 ->make(true);
@@ -139,6 +142,8 @@ class ieoController extends Controller
                 if ($ieo_icon != false) {
                     $ieo->ieo_icon = $ieo_icon;
                 }
+            } else {
+                $ieo->ieo_icon = null;
             }
 
             $update = $ieo->save();
