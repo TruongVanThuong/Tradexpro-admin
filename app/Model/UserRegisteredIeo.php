@@ -54,7 +54,7 @@ class UserRegisteredIeo extends Model
             }
         }
 
-        return 'Đang tính toán';
+        return 'Calculating';
     }
 
     public function isIeoEnded()

@@ -81,13 +81,13 @@ class ieoModel extends Model
         $endDate = Carbon::parse($this->end_date);
 
         if ($now->greaterThanOrEqualTo($endDate)) {
-            return 'Đã kết thúc';
+            return 'Ended';
         }
 
-        // Tính số ngày còn lại
+        // Calculate remaining days
         $diff = $now->diff($endDate);
 
-        return $diff->days . ' ngày ' . $diff->h . ' giờ ';
+        return $diff->days . ' days ' . $diff->h . ' hours ';
     }
 
     public function getStatus()
@@ -97,13 +97,13 @@ class ieoModel extends Model
         $endDate = Carbon::parse($this->end_date);
 
         if ($now->lessThan($startDate)) {
-            return 'Sắp diễn ra';
+            return 'Coming soon';
         }
 
         if ($now->greaterThan($endDate)) {
-            return 'Đã kết thúc';
+            return 'Ended';
         }
 
-        return 'Đang diễn ra';
+        return 'In progress';
     }
 }

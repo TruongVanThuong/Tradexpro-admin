@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 class IeoWallet extends Model
 {
     protected $table = 'ieo_wallet';
+    public $timestamps = false;
+
     protected $fillable = [
         'user_id',
         'coin_id',
         'coin_type',
         'balance',
-        'created_at',
-        'updated_at'
     ];
 
     public function user()
