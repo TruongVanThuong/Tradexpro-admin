@@ -44,11 +44,12 @@ class UserRegisteredIeo extends Model
         $isIeoEnded = $this->isIeoEnded();
 
         if ($isIeoEnded) {
-            $ieoWallet = IeoWallet::where('user_id', $userId)
-                ->where('coin_id', $ieoId)
+            $userRegistered = UserRegisteredIeo::where('user_id', $userId)
+                ->where('ieo_id', $ieoId)
                 ->first();
-            if ($ieoWallet) {
-                return $this->rating_win . '%';
+
+            if ($userRegistered && $userRegistered->rating_win) {
+                return $userRegistered->rating_win . '%';
             } else {
                 return $this->ieo->max_rate . '%';
             }

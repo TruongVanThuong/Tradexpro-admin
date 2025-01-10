@@ -24,7 +24,7 @@ class userRegisteredIeoController extends Controller
         if ($request->ajax()) {
             $registeredIeos = UserRegisteredIeo::join('users', 'user_registered_ieo.user_id', '=', 'users.id')
                 ->join('ieo', 'user_registered_ieo.ieo_id', '=', 'ieo.id')
-                ->select('user_registered_ieo.id', 'user_registered_ieo.rating_win', 'users.last_name as user_name', 'ieo.name as ieo_name');
+                ->select('user_registered_ieo.id', 'user_registered_ieo.rating_win', 'users.email as email', 'ieo.name as ieo_name');
             return datatables()->of($registeredIeos)
                 ->addColumn('actions', function ($registeredIeo) {
                     return view('admin.user-register-ieo.partials.actions', compact('registeredIeo'))->render();
