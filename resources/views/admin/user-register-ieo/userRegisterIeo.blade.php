@@ -32,6 +32,8 @@
                                 <tr>
                                     <th scope="col">{{ __('Email') }}</th>
                                     <th scope="col">{{ __('IEO Name') }}</th>
+                                    <th scope="col">{{ __('Price') }}</th>
+                                    <th scope="col">{{ __('Amount') }}</th>
                                     <th scope="col">{{ __('Rating win') }}</th>
                                     <th scope="col" class="all text-left">{{ __('Actions') }}</th>
                                 </tr>
@@ -60,6 +62,8 @@
                 columns: [
                     { "data": "email", "email": "users.email", "orderable": true },
                     { "data": "ieo_name", "name": "ieo.name", "orderable": true },
+                    { "data": "value", "name": "ieo.value", "orderable": true },
+                    { "data": "quantity", "name": "user_registered_ieo.quantity", "orderable": true },
                     { "data": "rating_win", "name": "user_registered_ieo.rating_win", "orderable": true },
                     { "data": "actions", "orderable": false }
                 ],
