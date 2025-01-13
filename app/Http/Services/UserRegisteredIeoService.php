@@ -22,6 +22,10 @@ class UserRegisteredIeoService extends BaseService
             ->select('user_registered_ieo.id','user_registered_ieo.rating_win', 'users.email as email', 'ieo.name as ieo_name')
             ->where('user_registered_ieo.id', $registeredIeoId)
             ->first();
+
+            $UserRegisteredIeo->rating_win = rtrim(number_format($UserRegisteredIeo->rating_win, 6), '0');
+            $UserRegisteredIeo->rating_win = rtrim($UserRegisteredIeo->rating_win, '.');
+
             if ($UserRegisteredIeo) {
                 return [
                     'success' => true,

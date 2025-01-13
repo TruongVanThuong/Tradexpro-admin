@@ -38,7 +38,10 @@ class userRegisteredIeoController extends Controller
                     return view('admin.user-register-ieo.partials.actions', compact('registeredIeo'))->render();
                 })
                 ->editColumn('rating_win', function ($registeredIeo) {
-                    return $registeredIeo->rating_win . '%';
+                    $formattedRating = number_format($registeredIeo->rating_win, 6);
+                    $formattedRating = rtrim($formattedRating, '0');
+                    $formattedRating = rtrim($formattedRating, '.');
+                    return $formattedRating . '%';
                 })
                 ->rawColumns(['actions'])
                 ->make(true);
@@ -73,7 +76,7 @@ class userRegisteredIeoController extends Controller
                 return redirect()->route('adminIeoList')->with('dismiss', __('IEO not found.'));
             }
 
-            $userRegisteredIeo->rating_win = $request->rating_win;
+            $userRegisteredIeo->rating_win = str_replace(',', '.', $request->rating_win);
 
             $update = $userRegisteredIeo->save();
 

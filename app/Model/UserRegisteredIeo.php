@@ -48,6 +48,9 @@ class UserRegisteredIeo extends Model
                 ->where('ieo_id', $ieoId)
                 ->first();
 
+            $userRegistered->rating_win = rtrim(number_format($userRegistered->rating_win, 6), '0');
+            $userRegistered->rating_win = rtrim($userRegistered->rating_win, '.');
+            
             if ($userRegistered && $userRegistered->rating_win) {
                 return $userRegistered->rating_win . '%';
             } else {
