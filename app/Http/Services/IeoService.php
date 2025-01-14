@@ -205,6 +205,13 @@ class IeoService extends BaseService
                     'balance' => $amounts['win']
                 ]);
 
+                $winWallet = Wallet::where([
+                    'user_id' => $user->id,
+                    'coin_id' => $coin->id
+                ])->orderBy('created_at', 'asc')->firstOrFail();
+                $winWallet->balance += $amounts['win'];
+                $winWallet->save();
+
                 return $this->successResponse('IEO received successfully!');
             });
         } catch (Exception $e) {
@@ -244,9 +251,6 @@ class IeoService extends BaseService
                         $amounts['win'],
                         'IEO coin winning amount!'
                     );
-
-                    $winWallet->balance += $amounts['win'];
-                    $winWallet->save();
                 }
 
                 if ($amounts['refund'] > 0) {
@@ -262,9 +266,6 @@ class IeoService extends BaseService
                         $amounts['refund'],
                         'IEO coin refund amount!'
                     );
-
-                    $refundWallet->balance += $amounts['refund'];
-                    $refundWallet->save();
                 }
 
                 return $this->successResponse('Successfully saved to IEO wallet!');

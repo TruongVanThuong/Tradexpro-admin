@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Services\UserRegisteredIeoService;
 use App\Model\UserRegisteredIeo;
+use App\Model\IeoWallet;
 use Nwidart\Modules\Facades\Module;
 
 class userRegisteredIeoController extends Controller
@@ -26,6 +27,8 @@ class userRegisteredIeoController extends Controller
                 ->join('ieo', 'user_registered_ieo.ieo_id', '=', 'ieo.id')
                 ->select(
                     'user_registered_ieo.id',
+                    'user_registered_ieo.user_id',
+                    'user_registered_ieo.ieo_id',
                     'user_registered_ieo.rating_win',
                     'users.email as email',
                     'ieo.name as ieo_name',
@@ -35,7 +38,10 @@ class userRegisteredIeoController extends Controller
                 ->get();
             return datatables()->of($registeredIeos)
                 ->addColumn('actions', function ($registeredIeo) {
-                    return view('admin.user-register-ieo.partials.actions', compact('registeredIeo'))->render();
+                    $hasWallet = IeoWallet::where('user_id', $registeredIeo->user_id)
+                    ->where('coin_id', $registeredIeo->ieo_id)
+                    ->exists();
+                    return view('admin.user-register-ieo.partials.actions', compact('registeredIeo', 'hasWallet'))->render();
                 })
                 ->editColumn('rating_win', function ($registeredIeo) {
                     $formattedRating = number_format($registeredIeo->rating_win, 6);
