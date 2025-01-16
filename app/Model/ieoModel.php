@@ -29,6 +29,7 @@ class ieoModel extends Model
         'max_rate',
         'start_date',
         'end_date',
+        'test',
     ];
 
     protected $casts = [

@@ -81,9 +81,22 @@ class IeoService extends BaseService
 
     public function getIeo()
     {
-        $object = $this->object->getDocs();
+        $user = auth()->user();
+        $allowedUserIds = explode(',', env('ALLOWED_USER_IDS', ''));
 
-        if (empty($object)) {
+        $checkUser = false;
+
+        if ($user && in_array($user->id, $allowedUserIds)) {
+            $checkUser = true;
+        }
+        $query = IeoModel::query();
+        if (!$checkUser) {
+            $query->where('test', 0);
+        }
+
+        $object = $query->get();
+
+        if ($object->isEmpty()) {
             return null;
         }
 
