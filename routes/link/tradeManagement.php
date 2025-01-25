@@ -42,3 +42,8 @@ Route::group([ 'group' => 'transaction'], function () {
 Route::group([ 'group' => 'trade_referral'], function () {
     Route::get('all-trade-referral-history', 'ReportController@adminAllTradeReferralHistory')->name('adminAllTradeReferralHistory');
 });
+
+Route::group([ 'group' => 'ieo_list'], function () {
+    Route::get('all-ieo-buy-order-history', 'ReportController@adminAllIEOBuyOrderHistory')->name('adminAllIEOBuyOrderHistory');
+    Route::get('all-ieo-buy-order-history-export', 'ReportController@adminAllIEOBuyOrderHistoryExport')->name('adminAllIEOBuyOrderHistoryExport');
+});

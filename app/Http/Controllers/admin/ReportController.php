@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\admin;
 
+use App\Model\Transaction;
+use DB;
 use Illuminate\Http\Request;
 use App\Exports\OrderHistory;
 use App\Exports\BuyOrderHistory;
 use App\Exports\TradeTransaction;
 use App\Model\TradeReferralHistory;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Services\BuyOrderService;
@@ -16,6 +19,9 @@ use App\Http\Services\StopLimitService;
 use App\Http\Services\TransactionService;
 use App\Http\Services\TradeReferralService;
 use App\Http\Requests\Admin\TransactionExportRequest;
+use App\Model\UserRegisteredIeo;
+use App\Exports\IeoBuyOrderHistoryExport;
+use App\Model\CurrencyDeposit;
 
 class ReportController extends Controller
 {
@@ -285,6 +291,135 @@ class ReportController extends Controller
     {
         try{
             return Excel::download(new TradeTransaction($request), 'TransactionHistory'.($request->export_to ?? '.csv'));
+        }catch(\Exception $e){
+            storeException('adminAllOrdersHistoryBuyExport', $e->getMessage());
+            return redirect()->back()->with('dismiss', __('Something went wrong'));
+        }
+    }
+
+    public function adminAllIEOBuyOrderHistory(Request $request)
+    {
+        $data['title'] = __('User IEO Purchase List');
+        $data['sub_menu'] = 'ieo_buy_order';
+
+        if ($request->ajax()) {
+            return $this->handleAjaxRequest($request);
+        }
+
+        return view('admin.exchange.report.ieo_buy_order_history', $data);
+    }
+
+    private function handleAjaxRequest(Request $request)
+    {
+        if (!$request->has('user_id') || empty($request->get('user_id'))) {
+            return response()->json([
+                'data' => [],
+                'message' => __('Please select a user first.')
+            ]);
+        }
+
+        $userId = $request->get('user_id');
+        $typeHistory = $request->get('type_history', 'ieo');
+
+        return match($typeHistory) {
+            'trade' => $this->getTradeHistory($userId),
+            'fiat' => $this->getFiatDepositHistory($userId),
+            default => $this->getIEOPurchaseHistory($userId)
+        };
+    }
+
+    private function getTradeHistory($userId)
+    {
+        $query = Transaction::join('coins as bc', 'bc.id', '=', 'transactions.base_coin_id')
+            ->join('coins as tc', 'tc.id', '=', 'transactions.trade_coin_id')
+            ->select([
+                'transaction_id',
+                DB::raw("CASE WHEN buy_user_id = $userId THEN buy_fees WHEN sell_user_id = $userId THEN sell_fees END as fees"),
+                DB::raw("visualNumberFormat(amount) as amount"),
+                DB::raw("bc.coin_type as base_coin"),
+                DB::raw("tc.coin_type as trade_coin"),
+                DB::raw("visualNumberFormat(price) as price"),
+                DB::raw("visualNumberFormat(last_price) as last_price"),
+                'price_order_type',
+                DB::raw("visualNumberFormat(total) as total"),
+                DB::raw("transactions.created_at as time")
+            ])
+            ->where(function($q) use ($userId) {
+                $q->where('buy_user_id', $userId)
+                  ->orWhere('sell_user_id', $userId);
+            })
+            ->orderBy('transactions.id', 'DESC')
+            ->get();
+
+        return datatables()->of($query)
+            ->editColumn('time', fn($trade) =>
+                $trade->time ? Carbon::parse($trade->time)->format('Y-m-d H:i:s') : 'N/A'
+            )
+            ->make(true);
+    }
+
+    private function getFiatDepositHistory($userId)
+    {
+        $lists = CurrencyDeposit::with(['bank'])
+            ->where('user_id', $userId)
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        return datatables()->of($lists)
+            ->editColumn('currency_amount', fn($list) => $list->currency_amount . " VND")
+            ->editColumn('coin_amount', fn($list) => $list->coin_amount . " " . $list->coin_type)
+            ->editColumn('id', fn($list) => $list->id)
+            ->editColumn('rate', fn($list) => $list->rate . " " . $list->coin_type)
+            ->editColumn('status', function ($list) {
+                return match($list->status) {
+                    1 => '<span class="text-success">Success</span>',
+                    2 => '<span class="text-danger">Failed</span>',
+                    default => 'N/A'
+                };
+            })
+            ->editColumn('created_at', fn($list) =>
+                $list->created_at ? Carbon::parse($list->created_at)->format('Y-m-d H:i:s') : 'N/A'
+            )
+            ->rawColumns(['status'])
+            ->make(true);
+    }
+
+    private function getIEOPurchaseHistory($userId)
+    {
+        $ieoPurchases = UserRegisteredIeo::select([
+            'user_registered_ieo.id',
+            'users.email as email',
+            'ieo.name as ieo_name',
+            'user_registered_ieo.quantity',
+            'user_registered_ieo.created_at',
+            'ieo.value as ieo_value',
+        ])
+        ->join('users', 'user_registered_ieo.user_id', '=', 'users.id')
+        ->join('ieo', 'user_registered_ieo.ieo_id', '=', 'ieo.id')
+        ->where('user_registered_ieo.quantity', '>', 0)
+        ->where('users.id', $userId);
+
+        return datatables()->of($ieoPurchases)
+            ->editColumn('created_at', fn($purchase) =>
+                $purchase->created_at ? Carbon::parse($purchase->created_at)->format('Y-m-d H:i:s') : 'N/A'
+            )
+            ->addColumn('totalAmount', function ($purchase) {
+                $amount = !empty($purchase->ieo_value) && $purchase->quantity > 0
+                    ? $purchase->ieo_value * $purchase->quantity
+                    : 0;
+
+                $totalAmount = number_format($amount, 6);
+                $totalAmount = rtrim(rtrim($totalAmount, '0'), '.');
+
+                return $totalAmount ?: '0';
+            })
+            ->make(true);
+    }
+
+    public function adminAllIEOBuyOrderHistoryExport(TransactionExportRequest $request)
+    {
+        try{
+            return Excel::download(new IeoBuyOrderHistoryExport($request), 'IeoBuyOrderTrade'.($request->export_to ?? '.csv'));
         }catch(\Exception $e){
             storeException('adminAllOrdersHistoryBuyExport', $e->getMessage());
             return redirect()->back()->with('dismiss', __('Something went wrong'));

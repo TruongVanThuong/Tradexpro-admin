@@ -70,6 +70,7 @@
 {{--{!! mainMenuRenderer('adminProfile',__('Profile'),$menu ?? '','profile','profile.svg') !!}--}}
 
 {!! subMenuRenderer(__('Trade Reports'),$menu ?? '', 'trade','trade-report.svg',[
+    ['route' => 'adminAllIEOBuyOrderHistory', 'title' => __('IEO Buy Order History'),'tab' => $sub_menu ?? '', 'tab_compare' => 'ieo_buy_order', 'route_param' => NULL ],
     ['route' => 'adminAllOrdersHistoryBuy', 'title' => __('Buy Order History'),'tab' => $sub_menu ?? '', 'tab_compare' => 'buy_order', 'route_param' => NULL ],
     ['route' => 'adminAllOrdersHistorySell', 'title' => __('Sell Order History'),'tab' => $sub_menu ?? '', 'tab_compare' => 'sell_order', 'route_param' => NULL ],
     ['route' => 'adminAllOrdersHistoryStopLimit', 'title' => __('Stop Limit Order History'),'tab' => $sub_menu ?? '', 'tab_compare' => 'stop_limit', 'route_param' => NULL ],
