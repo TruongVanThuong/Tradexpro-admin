@@ -175,13 +175,12 @@ class IeoService extends BaseService
             return ['success' => false, 'message' => 'Insufficient wallet balance to register for IEO!'];
         }
 
-        $userRegisteredIeo = UserRegisteredIeo::firstOrNew(
-            ['user_id' => $user->id, 'ieo_id' => $ieoId]
-        );
-
-        $userRegisteredIeo->quantity += $amount;
-        $userRegisteredIeo->rating_win = $ieo->max_rate;
-        $userRegisteredIeo->save();
+        UserRegisteredIeo::create([
+            'user_id' => $user->id,
+            'ieo_id' => $ieoId,
+            'quantity' => $amount,
+            'rating_win' => $ieo->max_rate,
+        ]);
 
         $wallet->balance -= $amount * $ieo->value;
         $wallet->save();
@@ -218,12 +217,23 @@ class IeoService extends BaseService
                     'balance' => $amounts['win']
                 ]);
 
-                $winWallet = Wallet::where([
-                    'user_id' => $user->id,
-                    'coin_id' => $coin->id
-                ])->orderBy('created_at', 'asc')->firstOrFail();
-                $winWallet->balance += $amounts['win'];
-                $winWallet->save();
+                if ($amounts['win'] > 0) {
+                    $winWallet = Wallet::where([
+                        'user_id' => $user->id,
+                        'coin_id' => $coin->id
+                    ])->orderBy('created_at', 'asc')->firstOrFail();
+                    $winWallet->balance += $amounts['win'];
+                    $winWallet->save();
+                }
+
+                if ($amounts['refund'] > 0) {
+                    $refundWallet = Wallet::where([
+                        'user_id' => $user->id,
+                        'coin_type' => 'USDT'
+                    ])->orderBy('created_at', 'asc')->firstOrFail();
+                    $refundWallet->balance += $amounts['refund'];
+                    $refundWallet->save();
+                }
 
                 return $this->successResponse('IEO received successfully!');
             });
