@@ -330,6 +330,8 @@ class ReportController extends Controller
 
     private function getTradeHistory($userId)
     {
+        $where['buy_user_id'] = $userId;
+        $orWhere = ['sell_user_id' => $userId];
         $query = Transaction::join('coins as bc', 'bc.id', '=', 'transactions.base_coin_id')
             ->join('coins as tc', 'tc.id', '=', 'transactions.trade_coin_id')
             ->select([
@@ -344,9 +346,9 @@ class ReportController extends Controller
                 DB::raw("visualNumberFormat(total) as total"),
                 DB::raw("transactions.created_at as time")
             ])
-            ->where(function($q) use ($userId) {
-                $q->where('buy_user_id', $userId)
-                  ->orWhere('sell_user_id', $userId);
+            ->where($where)
+            ->when(isset($orWhere) ,function($query) use ($orWhere){
+                $query->where($orWhere);
             })
             ->orderBy('transactions.id', 'DESC')
             ->get();
