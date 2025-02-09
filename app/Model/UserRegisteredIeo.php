@@ -44,17 +44,21 @@ class UserRegisteredIeo extends Model
         $isIeoEnded = $this->isIeoEnded();
 
         if ($isIeoEnded) {
-            $ieoWallet = IeoWallet::where('user_id', $userId)
-                ->where('coin_id', $ieoId)
+            $userRegistered = UserRegisteredIeo::where('user_id', $userId)
+                ->where('ieo_id', $ieoId)
                 ->first();
-            if ($ieoWallet) {
-                return $this->rating_win . '%';
+
+            $userRegistered->rating_win = rtrim(number_format($userRegistered->rating_win, 6), '0');
+            $userRegistered->rating_win = rtrim($userRegistered->rating_win, '.');
+            
+            if ($userRegistered && $userRegistered->rating_win) {
+                return $userRegistered->rating_win . '%';
             } else {
                 return $this->ieo->max_rate . '%';
             }
         }
 
-        return 'Đang tính toán';
+        return 'Calculating';
     }
 
     public function isIeoEnded()

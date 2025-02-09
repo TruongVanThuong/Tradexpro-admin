@@ -4268,3 +4268,8 @@ function processExceptionMsg(Exception $e): string {
     $file = "$directory/$file";
     return $file.':'.$e->getLine().' -> '.$e->getMessage();
 }
+
+function getAllUser() {
+    $user = User::all();
+    return $user;
+}

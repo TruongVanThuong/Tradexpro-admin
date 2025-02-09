@@ -53,4 +53,24 @@ class IeoController extends Controller
         }
     }
 
+    public function receiveIeoWallet(Request $request) {
+        $result = $this->service->receiveIeoWallet($request['itemId']);
+
+        if ($result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+                'success' => true
+            ]);
+        } else {
+            return response()->json([
+                'message' => $result['message'],
+                'success' => false,
+            ]);
+        }
+    }
+
+    public function getIeoTransactionHistory(Request $request) {
+        return $this->service->getIeoTransactionHistory($request);
+    }
+
 }

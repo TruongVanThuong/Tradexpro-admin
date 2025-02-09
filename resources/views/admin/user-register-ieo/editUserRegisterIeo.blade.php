@@ -29,8 +29,8 @@
 
                                 <div class="col-12 col-sm-6 col-md-4">
                                     <div class="form-group">
-                                        <label for="name">{{ __('User Name') }}</label>
-                                        <input type="text" id="user_name" name="user_name" value="{{ $item->user_name }}" class="form-control" disabled>
+                                        <label for="name">{{ __('Email') }}</label>
+                                        <input type="text" id="email" name="email" value="{{ $item->email }}" class="form-control" disabled>
                                     </div>
                                 </div>
 

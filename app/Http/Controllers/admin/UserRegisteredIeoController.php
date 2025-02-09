@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Services\UserRegisteredIeoService;
 use App\Model\UserRegisteredIeo;
+use App\Model\IeoWallet;
 use Nwidart\Modules\Facades\Module;
 
 class userRegisteredIeoController extends Controller
@@ -24,13 +25,29 @@ class userRegisteredIeoController extends Controller
         if ($request->ajax()) {
             $registeredIeos = UserRegisteredIeo::join('users', 'user_registered_ieo.user_id', '=', 'users.id')
                 ->join('ieo', 'user_registered_ieo.ieo_id', '=', 'ieo.id')
-                ->select('user_registered_ieo.id', 'user_registered_ieo.rating_win', 'users.last_name as user_name', 'ieo.name as ieo_name');
+                ->select(
+                    'user_registered_ieo.id',
+                    'user_registered_ieo.user_id',
+                    'user_registered_ieo.ieo_id',
+                    'user_registered_ieo.rating_win',
+                    'users.email as email',
+                    'ieo.name as ieo_name',
+                    'ieo.value as value',
+                    'user_registered_ieo.quantity'
+                )
+                ->get();
             return datatables()->of($registeredIeos)
                 ->addColumn('actions', function ($registeredIeo) {
-                    return view('admin.user-register-ieo.partials.actions', compact('registeredIeo'))->render();
+                    $hasWallet = IeoWallet::where('user_id', $registeredIeo->user_id)
+                    ->where('coin_id', $registeredIeo->ieo_id)
+                    ->exists();
+                    return view('admin.user-register-ieo.partials.actions', compact('registeredIeo', 'hasWallet'))->render();
                 })
                 ->editColumn('rating_win', function ($registeredIeo) {
-                    return $registeredIeo->rating_win . '%';
+                    $formattedRating = number_format($registeredIeo->rating_win, 6);
+                    $formattedRating = rtrim($formattedRating, '0');
+                    $formattedRating = rtrim($formattedRating, '.');
+                    return $formattedRating . '%';
                 })
                 ->rawColumns(['actions'])
                 ->make(true);
@@ -65,7 +82,7 @@ class userRegisteredIeoController extends Controller
                 return redirect()->route('adminIeoList')->with('dismiss', __('IEO not found.'));
             }
 
-            $userRegisteredIeo->rating_win = $request->rating_win;
+            $userRegisteredIeo->rating_win = str_replace(',', '.', $request->rating_win);
 
             $update = $userRegisteredIeo->save();
 

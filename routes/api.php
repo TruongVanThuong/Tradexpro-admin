@@ -72,6 +72,7 @@ Route::group(['middleware' => 'maintenanceMode'], function (){
 
             Route::get('currency-list', 'LandingController@currencyList');
             Route::get('public-site-settings', 'LandingController@publicSiteSettings');
+            Route::post('check-referrals-code', 'AuthController@checkReferralsCode');
         });
         Route::group(['namespace'=>'Api\User'], function () {
             Route::get('get-exchange-all-orders-app', 'ExchangeController@getExchangeAllOrdersApp')->name('getExchangeAllOrdersApp');
@@ -138,6 +139,8 @@ Route::group(['middleware' => 'maintenanceMode'], function (){
             Route::get('get-ieo-user-registered','IeoController@getIeoUserRegistered')->name('getIeoUserRegistered');
             Route::post('register-ieo','IeoController@registerIeo')->name('registerIeo');
             Route::post('receive-ieo', 'IeoController@receiveIeo')->name('receiveIeo');
+            Route::post('receive-ieo-wallet', 'IeoController@receiveIeoWallet')->name('receiveIeoWallet');
+            Route::get('get-ieo-transaction-history','IeoController@getIeoTransactionHistory');
 
             Route::group(['middleware' => ['checkSwap']], function () {
                 Route::get('swap-coin-details-app', 'WalletController@getCoinSwapDetailsApp')->name('getCoinSwapDetailsApp');
