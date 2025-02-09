@@ -28,6 +28,7 @@ class IeoService extends BaseService
         parent::__construct($this->model, $this->repository);
     }
 
+    //  ADMIN
     public function getIeoDetailsById($ieoId)
     {
         try {
@@ -79,6 +80,7 @@ class IeoService extends BaseService
         }
     }
 
+    //  USER
     public function getIeo()
     {
         $user = auth()->user();
@@ -123,7 +125,11 @@ class IeoService extends BaseService
             ->get(['id', 'name', 'value', 'symbol', 'total_supply', 'max_rate', 'start_date', 'end_date']);
 
         $ieoHistory = $ieoHistory->map(function ($ieo) use ($user) {
-            $userRegistered = $ieo->userRegisteredIeo->first();
+            $userRegisteredIeo = $ieo->userRegisteredIeo;
+
+            $quantityRegistered = $userRegisteredIeo->sum('quantity');
+
+            $userRegistered = $userRegisteredIeo->first();
             $frozenRate = $userRegistered ? $userRegistered->getLockedPercentage() : 0;
             $releaseRate = $userRegistered ? $userRegistered->getUnlockedPercentage() : 0;
             $winningRate = $userRegistered ? $userRegistered->calculateWinRate($ieo->id, $user->id) : 0;
@@ -133,8 +139,6 @@ class IeoService extends BaseService
             $checkIeoTranferHistory = LogTranferIeoCoin::where('user_id', $user->id)
                 ->where('ieo_id', $ieo->id)
                 ->first();
-
-            $quantityRegistered = $userRegistered ? $userRegistered->quantity : 0;
 
             return [
                 'id' => $ieo->id,
@@ -203,7 +207,7 @@ class IeoService extends BaseService
                 $userRegisteredIeo = UserRegisteredIeo::where([
                     'user_id' => $user->id,
                     'ieo_id' => $ieo->id
-                ])->firstOrFail();
+                ])->get();
 
                 $amounts = $this->calculateIeoAmounts($userRegisteredIeo, $ieo);
 
@@ -217,25 +221,25 @@ class IeoService extends BaseService
                     'balance' => $amounts['win']
                 ]);
 
-                if ($amounts['win'] > 0) {
-                    $winWallet = Wallet::where([
-                        'user_id' => $user->id,
-                        'coin_id' => $coin->id
-                    ])->orderBy('created_at', 'asc')->firstOrFail();
-                    $winWallet->balance += $amounts['win'];
-                    $winWallet->save();
-                }
+                // if ($amounts['win'] > 0) {
+                //     $winWallet = Wallet::where([
+                //         'user_id' => $user->id,
+                //         'coin_id' => $coin->id
+                //     ])->orderBy('created_at', 'asc')->firstOrFail();
+                //     $winWallet->balance += $amounts['win'];
+                //     $winWallet->save();
+                // }
 
-                if ($amounts['refund'] > 0) {
-                    $refundWallet = Wallet::where([
-                        'user_id' => $user->id,
-                        'coin_type' => 'USDT'
-                    ])->orderBy('created_at', 'asc')->firstOrFail();
-                    $refundWallet->balance += $amounts['refund'];
-                    $refundWallet->save();
-                }
+                // if ($amounts['refund'] > 0) {
+                //     $refundWallet = Wallet::where([
+                //         'user_id' => $user->id,
+                //         'coin_type' => 'USDT'
+                //     ])->orderBy('created_at', 'asc')->firstOrFail();
+                //     $refundWallet->balance += $amounts['refund'];
+                //     $refundWallet->save();
+                // }
 
-                return $this->successResponse('IEO received successfully!');
+                return $this->successResponse('IEO received successfully. It may take a while for tokens to be stored in your wallet. Please wait!');
             });
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
@@ -257,7 +261,7 @@ class IeoService extends BaseService
                 $userRegisteredIeo = UserRegisteredIeo::where([
                     'user_id' => $user->id,
                     'ieo_id' => $ieo->id
-                ])->firstOrFail();
+                ])->get();
 
                 $amounts = $this->calculateIeoAmounts($userRegisteredIeo, $ieo);
 
@@ -291,28 +295,29 @@ class IeoService extends BaseService
                     );
                 }
 
-                return $this->successResponse('Successfully saved to IEO wallet!');
+                return $this->successResponse('Swap successful!');
             });
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
     }
 
-    private function calculateIeoAmounts($userRegisteredIeo, $ieo)
+    private function calculateIeoAmounts($userRegisteredIeos, $ieo)
     {
-        if ($userRegisteredIeo->rating_win > 0) {
+        $totalWin = 0;
+        $totalRefund = 0;
+
+        foreach ($userRegisteredIeos as $userRegisteredIeo) {
             $winAmount = ($userRegisteredIeo->rating_win * $userRegisteredIeo->quantity / 100);
             $refundAmount = $userRegisteredIeo->quantity - $winAmount;
 
-            return [
-                'win' => $winAmount,
-                'refund' => $refundAmount * $ieo->value,
-            ];
+            $totalWin += $winAmount;
+            $totalRefund += $refundAmount * $ieo->value;
         }
 
         return [
-            'win' => 0,
-            'refund' => $userRegisteredIeo->quantity * $ieo->value,
+            'win' => $totalWin,
+            'refund' => $totalRefund,
         ];
     }
 
